@@ -1,0 +1,33 @@
+.App {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+.scraper-form {
+  margin-bottom: 20px;
+}
+
+textarea {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+button {
+  padding: 10px;
+  cursor: pointer;
+}
+
+.company-list table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.company-list th, .company-list td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.company-list th {
+  background: #f4f4f4;
+}
