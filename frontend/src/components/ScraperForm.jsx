@@ -32,7 +32,7 @@ function ScraperForm({ setCompanies }) {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/scrape", { urls: urlArray });
+      const res = await axios.post("https://web-scraper-uq2i.onrender.com/api/scrape", { urls: urlArray });
       setCompanies(res.data);
     } catch (err) {
       console.error(err);

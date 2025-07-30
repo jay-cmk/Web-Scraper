@@ -8,7 +8,13 @@ const scrapeWebsite = async (url) => {
 
     const browser = await puppeteer.launch({
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      executablePath: puppeteer.executablePath(), // ✅ Makes it work on Render
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu"
+      ]
     });
 
     const page = await browser.newPage();
@@ -19,7 +25,7 @@ const scrapeWebsite = async (url) => {
     const data = await page.evaluate(() => {
       const bodyText = document.body.innerText;
 
-      // --- Company Name Detection ---
+      // --- Company Name ---
       let companyName =
         document.querySelector("meta[property='og:site_name']")?.content ||
         document.querySelector("title")?.innerText ||
@@ -27,18 +33,18 @@ const scrapeWebsite = async (url) => {
         "";
       companyName = companyName.replace(/\|.*$/, "").trim();
 
-      // --- Social Media Links ---
+      // --- Social Media ---
       const socialLinks = Array.from(document.querySelectorAll("a[href]"))
         .map(a => a.href)
         .filter(href =>
           /(linkedin\.com|twitter\.com|facebook\.com|instagram\.com)/i.test(href)
         );
 
-      // --- Address Detection (existing logic kept) ---
+      // --- Address ---
       const addressRegex = /\d{1,5}.*?,\s*[\w\s]+,\s*[\w\s]+,\s*[\w\s-]+(\d{5,6})?/;
       const addressMatch = bodyText.match(addressRegex) || [];
 
-      // --- Products / Services Detection (improved) ---
+      // --- Products / Services ---
       let productsServices = "";
       const productKeywords = /(products?|services?|solutions?|offerings?)\b/i;
       const navLinks = Array.from(document.querySelectorAll("a, li, h2, h3"))
@@ -48,7 +54,7 @@ const scrapeWebsite = async (url) => {
         productsServices = [...new Set(navLinks)].slice(0, 5).join(", ");
       }
 
-      // --- Industry Detection (improved) ---
+      // --- Industry ---
       let industry =
         bodyText.match(/Industry\s*:\s*([\s\S]{0,100})/i)?.[1]?.trim() || "";
       if (!industry) {
@@ -57,7 +63,7 @@ const scrapeWebsite = async (url) => {
         else if (/education/i.test(bodyText)) industry = "Education";
       }
 
-      // --- Tech Stack Detection (improved) ---
+      // --- Tech Stack ---
       const foundTech = [];
       const techKeywords = [
         { name: "React", pattern: /react/i },
@@ -76,12 +82,10 @@ const scrapeWebsite = async (url) => {
         { name: "Kubernetes", pattern: /kubernetes|k8s/i }
       ];
 
-      // Search body text for tech keywords
       techKeywords.forEach(tech => {
         if (tech.pattern.test(bodyText)) foundTech.push(tech.name);
       });
 
-      // Search script src for tech hints
       Array.from(document.scripts).forEach(script => {
         techKeywords.forEach(tech => {
           if (script.src && tech.pattern.test(script.src))
@@ -96,9 +100,7 @@ const scrapeWebsite = async (url) => {
         : [];
 
       // --- Competitors ---
-      const competitorsMatch = bodyText.match(
-        /Competitors?:?\s([\s\S]{0,300})/i
-      );
+      const competitorsMatch = bodyText.match(/Competitors?:?\s([\s\S]{0,300})/i);
       const competitors = competitorsMatch
         ? competitorsMatch[1].split("\n").slice(0, 5)
         : [];
@@ -120,12 +122,9 @@ const scrapeWebsite = async (url) => {
         name: companyName || "No name found",
         website: window.location.href,
         email:
-          bodyText.match(
-            /[a-zA-Z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i
-          )?.[0] || "Not found",
-        phone:
-          bodyText.match(/(\+\d{1,3}[- ]?)?\d{10}/)?.[0] || "Not found",
-
+          bodyText.match(/[a-zA-Z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i)?.[0] ||
+          "Not found",
+        phone: bodyText.match(/(\+\d{1,3}[- ]?)?\d{10}/)?.[0] || "Not found",
         socialMedia: socialLinks,
         address: addressMatch[0] || "Not found",
         description,
